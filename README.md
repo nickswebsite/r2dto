@@ -1,6 +1,8 @@
 R2DTo
 =====
 
+![Build Status](https://travis-ci.org/nickswebsite/r2dto.svg?branch=master Status)
+
 Pronounced R-2-D-2.
 
 Provides django like interface for transformation and validation of arbitrary
