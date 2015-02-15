@@ -1,0 +1,7 @@
+language: python
+versions:
+- "2.7"
+- "3.4"
+install:
+- pip install pep8
+script: python -m tests
