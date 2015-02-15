@@ -1,14 +1,21 @@
+import datetime
 import unittest
 
-from r2dto.fields import StringField, BooleanField, FloatField, IntegerField, ListField, ObjectField
+from r2dto.fields import StringField, BooleanField, FloatField, IntegerField, ListField, ObjectField, DateTimeField
 from r2dto import Serializer, ValidationError
 
 
 class AcceptanceTests(unittest.TestCase):
     def test_complex_types(self):
         class SubObj(object):
-            def __init__(self):
-                self.field = "Field One"
+            def __init__(self, field="Field One"):
+                self.field = field
+
+            def __eq__(self, other):
+                try:
+                    return self.field == other.field
+                except AttributeError:
+                    return False
 
         class Obj(object):
             def __init__(self):
@@ -40,7 +47,7 @@ class AcceptanceTests(unittest.TestCase):
         data = {
             "sub_obj": {
                 "field": "Some String Field Value",
-                },
+            },
             "list_field": [
                 "listItemOne",
                 "listItemTwo"
@@ -51,6 +58,39 @@ class AcceptanceTests(unittest.TestCase):
         s2.validate()
         self.assertEqual(s2.object.sub_obj.field, data["sub_obj"]["field"])
         self.assertEqual(data["list_field"], s2.object.list_field)
+
+    def test_list_field_with_subobjects(self):
+        class SubObj(object):
+            def __init__(self, field=""):
+                self.field = field
+
+        class Obj(object):
+            def __init__(self):
+                self.subobjs = []
+                self.objfield = ""
+
+        class SubObjSerializer(Serializer):
+            class Meta:
+                model = SubObj
+
+            field = StringField()
+
+        class ObjSerializer(Serializer):
+            class Meta:
+                model = Obj
+
+            objfield = StringField(name="objField", required=True, allow_null=False)
+            subobjs = ListField(ObjectField(SubObjSerializer, required=True, allow_null=False), name="subObjs", required=True, allow_null=False)
+
+        o = Obj()
+        o.objfield = "ONE"
+        o.subobjs = [SubObj(field="ONE_SUB_ONE"), SubObj(field="ONE_SUB_TWO")]
+
+        s = ObjSerializer(object=o)
+        s.validate()
+        self.assertEqual(o.objfield, s.data["objField"])
+        self.assertEqual(o.subobjs[0].field, s.data["subObjs"][0]["field"])
+        self.assertEqual(o.subobjs[1].field, s.data["subObjs"][1]["field"])
 
     def test_list_failure(self):
         class ObjSerializer(Serializer):
@@ -95,7 +135,7 @@ class AcceptanceTests(unittest.TestCase):
 
         data = {
             "enum_field": "hi",
-            }
+        }
 
         s = ObjSerializer(data=data)
         s.validate()
@@ -114,6 +154,7 @@ class AcceptanceTests(unittest.TestCase):
                 self.integer_field = 23
                 self.float_field = 2.41342
                 self.boolean_field = False
+                self.datetime_field = datetime.datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
 
         class ObjSerializer(Serializer):
             class Meta:
@@ -123,12 +164,14 @@ class AcceptanceTests(unittest.TestCase):
             integer_field = IntegerField(name="integerField", required=True, allow_null=False)
             float_field = FloatField(name="floatField", required=True, allow_null=False)
             boolean_field = BooleanField(name="boolField", required=True, allow_null=False)
+            datetime_field = DateTimeField(name="datetimeField", required=True, allow_null=False)
 
         obj = Obj()
         obj.string_field = u"Some String\u2134"
         obj.integer_field = 233
         obj.float_field = 2.41342
         obj.boolean_field = True
+        obj.datetime_field = datetime.datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
 
         s = ObjSerializer(object=obj)
         s.validate()
@@ -136,13 +179,15 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(obj.integer_field, s.data["integerField"])
         self.assertEqual(obj.float_field, s.data["floatField"])
         self.assertIs(obj.boolean_field, s.data["boolField"])
+        self.assertEqual("2013-05-04 02:01:00.132832", s.data["datetimeField"])
 
         data = {
             "stringField": u"Some Other String \u1231",
             "integerField": 54000000000000000023434592020934082308902340823408234,
             "floatField": 200.11238237384957812938712938573945,
             "boolField": True,
-            }
+            "datetimeField": "2013-12-30 23:56:23.431090",
+        }
 
         s2 = ObjSerializer(data=data)
         s2.validate()
@@ -151,6 +196,7 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(s2.object.integer_field, data["integerField"])
         self.assertEqual(s2.object.float_field, data["floatField"])
         self.assertIs(s2.object.boolean_field, data["boolField"])
+        self.assertEqual(s2.object.datetime_field, datetime.datetime(2013, 12, 30, 23, 56, 23, 431090))
 
         data = {
             "stringField": None,
@@ -178,7 +224,7 @@ class AcceptanceTests(unittest.TestCase):
 
         data = {
             "stringField": None,
-            }
+        }
 
         s2 = ObjSerializer(data=data)
         s2.validate()

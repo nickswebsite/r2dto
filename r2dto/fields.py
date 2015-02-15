@@ -1,3 +1,5 @@
+import datetime
+
 from .base import ValidationError, InvalidTypeValidationError, BaseField
 
 __all__ = ("Field", "StringField", "BooleanField", "IntegerField", "FloatField", "ObjectField", "ListField")
@@ -108,3 +110,43 @@ class ListField(BaseField):
                 raise InvalidTypeValidationError("{}[{}]".format(self.name, item_i), str(self.allowed_types), type(item))
 
         return res
+
+    def object_to_data(self, obj):
+        res = []
+        for item_i, item in enumerate(obj):
+            for allowed_type in self.allowed_types:
+                try:
+                    data = allowed_type.object_to_data(item)
+                except ValidationError:
+                    pass
+                else:
+                    res.append(data)
+                    break
+            else:
+                raise InvalidTypeValidationError("{}[{}]".format(self.name, item_i), str(self.allowed_types), type(item))
+        return res
+
+
+class DateTimeField(StringField):
+    """
+    Represents a datetime object.
+    """
+    def __init__(self, fmt=None, *args, **kwargs):
+        super(DateTimeField, self).__init__(*args, **kwargs)
+        self.fmt = fmt or "%Y-%m-%d %H:%M:%S.%f"
+
+    def clean(self, data):
+        data = super(DateTimeField, self).clean(data)
+
+        try:
+            res = datetime.datetime.strptime(data, self.fmt)
+        except ValueError as ex:
+            raise ValidationError(str(ex))
+        else:
+            return res
+
+    def object_to_data(self, obj):
+        if not isinstance(obj, datetime.datetime):
+            raise InvalidTypeValidationError(self.name, "datetime", type(obj))
+
+        return obj.strftime(self.fmt)
