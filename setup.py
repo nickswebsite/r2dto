@@ -39,6 +39,7 @@ class DocsCommand(Command):
 setup(
     name="r2dto",
     author="The Magnificant Nick",
+    author_email="send_me_spam@yahoo.com",
     url="https://github.com/nickswebsite/r2dto",
     version=__version__,
     description=__doc__,
