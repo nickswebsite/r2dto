@@ -50,5 +50,16 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# MkDocs
+site/
+
 # PyBuilder
 target/
+
+# Virtual environments.
+u/
+v/
+w/
+x/
+y/
+z/
