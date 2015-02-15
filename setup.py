@@ -20,7 +20,7 @@ Programming Language :: Python
 Topic :: Internet :: WWW/HTTP :: Dynamic Content
 Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries
 Topic :: Software Development
-""".strip().split()
+""".strip().split("\n")
 
 
 class DocsCommand(Command):
