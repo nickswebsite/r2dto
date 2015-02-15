@@ -38,8 +38,7 @@ Todos
 -----
 
 * More tests need to be written, particularly for fields.
-* Test with pypy and pypy3
-* Implement DateTimeField, DateField, TimeField, and TimestampField.
-* Implement UuidField.
+* Implement TimestampField.
 * Implement EmailValidator.
 * Implement UrlValidator.
+* Set up tox to test with pypy and pypy3 (already integrated with travis-ci.)

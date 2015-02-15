@@ -135,26 +135,56 @@ class ListField(BaseField):
 class DateTimeField(StringField):
     """
     Represents a datetime object.
+
+    Pass in a format string as the fmt parameter to set the format string, or you can pass in a callable using the
+    'parse' keyword.
     """
-    def __init__(self, fmt=None, *args, **kwargs):
+    default_fmt = "%Y-%m-%d %H:%M:%S.%f"
+    instance_type = datetime.datetime
+
+    def __init__(self, fmt=None, parse=None, *args, **kwargs):
         super(DateTimeField, self).__init__(*args, **kwargs)
-        self.fmt = fmt or "%Y-%m-%d %H:%M:%S.%f"
+        self.fmt = fmt or self.default_fmt
+        self.parse = parse or (lambda s: datetime.datetime.strptime(s, self.fmt))
 
     def clean(self, data):
         data = super(DateTimeField, self).clean(data)
 
         try:
-            res = datetime.datetime.strptime(data, self.fmt)
+            res = self.parse(data)
         except ValueError as ex:
             raise ValidationError(str(ex))
         else:
             return res
 
     def object_to_data(self, obj):
-        if not isinstance(obj, datetime.datetime):
+        if not isinstance(obj, self.instance_type):
             raise InvalidTypeValidationError(self.name, "datetime", type(obj))
-
         return obj.strftime(self.fmt)
+
+
+class DateField(DateTimeField):
+    """
+    Represents a date object.
+    """
+
+    default_fmt = "%Y-%m-%d"
+    instance_type = datetime.date
+
+    def clean(self, data):
+        return super(DateField, self).clean(data).date()
+
+
+class TimeField(DateTimeField):
+    """
+    Represents a time object.
+    """
+
+    default_fmt = "%H:%M:%S.%f"
+    instance_type = datetime.time
+
+    def clean(self, data):
+        return super(TimeField, self).clean(data).time()
 
 
 class UuidField(StringField):

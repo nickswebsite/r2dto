@@ -116,3 +116,35 @@ Use the 'validators' key word argument to use the validator with a particular fi
     ...     print(ex.errors)
     Validation Failed
     ["grade must be one of ('A+', 'A').  Got A-."]
+
+# Fields
+
+## DateTimeField
+
+Represents a datetime object.
+
+Pass in a format string as the fmt parameter to set the format string, or you can pass in a callable using the
+'parse' keyword.
+
+    >>> import datetime
+
+    >>> class MaggieSerializer(Serializer):
+    ...     birthday = fields.DateTimeField()
+
+    >>> s = MaggieSerializer(data={"birthday": "1989-12-05 20:00:00.000000"})
+    >>> s.validate()
+    >>> s.object.birthday
+    datetime.datetime(1989, 12, 5, 20, 0)
+
+You can also pass in a 'parse' function into the field constructor:
+
+    >>> def my_parse_date(datestr):
+    ...     return datetime.datetime.strptime(datestr, "%Y-%m-%d %H-%M-%S")
+
+    >>> class MargeSerializer(Serializer):
+    ...     anniversary = fields.DateTimeField(parse=my_parse_date)
+
+    >>> s = MargeSerializer(data={"anniversary": "1979-02-23 05-02-12"})
+    >>> s.validate()
+    >>> s.object.anniversary
+    datetime.datetime(1979, 2, 23, 5, 2, 12)

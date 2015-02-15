@@ -3,7 +3,7 @@ import unittest
 import uuid
 
 from r2dto.fields import StringField, BooleanField, FloatField, IntegerField, ListField, ObjectField, DateTimeField, \
-    UuidField
+    UuidField, DateField, TimeField
 from r2dto import Serializer, ValidationError
 
 
@@ -161,6 +161,8 @@ class AcceptanceTests(unittest.TestCase):
                 self.boolean_field = False
                 self.datetime_field = datetime.datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
                 self.uuid_field = None
+                self.date_field = None
+                self.time_field = None
 
         class ObjSerializer(Serializer):
             class Meta:
@@ -171,6 +173,8 @@ class AcceptanceTests(unittest.TestCase):
             float_field = FloatField(name="floatField", required=True, allow_null=False)
             boolean_field = BooleanField(name="boolField", required=True, allow_null=False)
             datetime_field = DateTimeField(name="datetimeField", required=True, allow_null=False)
+            date_field = DateField(name="dateField", required=True, allow_null=False)
+            time_field = TimeField(name="timeField", required=True, allow_null=False)
             uuid_field = UuidField(name="uuidField", required=True, allow_null=False)
 
         obj = Obj()
@@ -180,6 +184,8 @@ class AcceptanceTests(unittest.TestCase):
         obj.boolean_field = True
         obj.datetime_field = datetime.datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
         obj.uuid_field = uuid.UUID("e841beb3-ff2e-4b0a-b6a6-ea56044b2288")
+        obj.date_field = datetime.date(2014, 3, 1)
+        obj.time_field = datetime.time(12, 30, 23, 341012)
 
         s = ObjSerializer(object=obj)
         s.validate()
@@ -189,14 +195,18 @@ class AcceptanceTests(unittest.TestCase):
         self.assertIs(obj.boolean_field, s.data["boolField"])
         self.assertEqual("2013-05-04 02:01:00.132832", s.data["datetimeField"])
         self.assertEqual("e841beb3-ff2e-4b0a-b6a6-ea56044b2288", s.data["uuidField"])
+        self.assertEqual("2014-03-01", s.data["dateField"])
+        self.assertEqual("12:30:23.341012", s.data["timeField"])
 
         data = {
             "stringField": u"Some Other String \u1231",
             "integerField": 54000000000000000023434592020934082308902340823408234,
             "floatField": 200.11238237384957812938712938573945,
             "boolField": True,
+            "uuidField": "e841beb3-ff2e-4b0a-b6a6-ea56044b2288",
             "datetimeField": "2013-12-30 23:56:23.431090",
-            "uuidField": "e841beb3-ff2e-4b0a-b6a6-ea56044b2288"
+            "dateField": "2014-02-26",
+            "timeField": "12:04:23.430123"
         }
 
         s2 = ObjSerializer(data=data)
@@ -206,8 +216,10 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(s2.object.integer_field, data["integerField"])
         self.assertEqual(s2.object.float_field, data["floatField"])
         self.assertIs(s2.object.boolean_field, data["boolField"])
-        self.assertEqual(s2.object.datetime_field, datetime.datetime(2013, 12, 30, 23, 56, 23, 431090))
         self.assertEqual(uuid.UUID("e841beb3-ff2e-4b0a-b6a6-ea56044b2288"), s2.object.uuid_field)
+        self.assertEqual(s2.object.datetime_field, datetime.datetime(2013, 12, 30, 23, 56, 23, 431090))
+        self.assertEqual(s2.object.date_field, datetime.date(2014, 2, 26))
+        self.assertEqual(s2.object.time_field, datetime.time(12, 4, 23, 430123))
 
         data = {
             "stringField": None,
