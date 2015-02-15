@@ -1,3 +1,7 @@
+"""
+Package to convert arbitrary python objects into DTOs ready for serialization and validation.
+"""
+
 __version__ = "0.0.1"
 
 from setuptools import setup, find_packages, Command
@@ -7,6 +11,16 @@ try:
 except ImportError:
     def mkdocs_main(cmd, args, options):
         raise NotImplementedError("mkdocs modele must be installed to run this command.")
+
+CLASSIFIERS = """
+Development Status :: 3 - Alpha
+Intended Audience :: Developers
+License :: Public Domain
+Programming Language :: Python
+Topic :: Internet :: WWW/HTTP :: Dynamic Content
+Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries
+Topic :: Software Development
+""".strip().split()
 
 
 class DocsCommand(Command):
@@ -25,9 +39,13 @@ class DocsCommand(Command):
 setup(
     name="r2dto",
     author="The Magnificant Nick",
+    url="https://github.com/nickswebsite/r2dto",
     version=__version__,
+    description=__doc__,
+    keywords="dto serializer serialize REST marshal JSON",
     packages=find_packages(exclude=["test/"]),
     cmdclass={
         "docs": DocsCommand,
-    }
+    },
+    classifiers=CLASSIFIERS,
 )
