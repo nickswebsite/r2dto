@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from .base import ValidationError, InvalidTypeValidationError, BaseField
 
@@ -150,3 +151,24 @@ class DateTimeField(StringField):
             raise InvalidTypeValidationError(self.name, "datetime", type(obj))
 
         return obj.strftime(self.fmt)
+
+
+class UuidField(StringField):
+    """
+    Represents a UUID.
+    """
+
+    def clean(self, data):
+        data = super(UuidField, self).clean(data)
+
+        try:
+            res = uuid.UUID(data)
+        except ValueError as ex:
+            raise ValidationError(str(ex))
+        else:
+            return res
+
+    def object_to_data(self, obj):
+        if not isinstance(obj, uuid.UUID):
+            raise InvalidTypeValidationError(self.name, "uuid", type(obj))
+        return str(obj)
