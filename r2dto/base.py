@@ -96,7 +96,7 @@ class BaseSerializer(object):
     options = None
 
     def __init__(self, data=None, object=None):
-        if (data, object) == (None, None) or data is not None and object is not None:
+        if data is None and object is None or data is not None and object is not None:
             raise ValueError("Either 'object' or 'data' must be supplied as arguments, but not both.")
         self.data = data
         self.object = object
