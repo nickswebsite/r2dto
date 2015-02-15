@@ -1,7 +1,7 @@
 R2DTo
 =====
 
-![Build Status](https://travis-ci.org/nickswebsite/r2dto.svg?branch=master Status)
+![Build Status](https://travis-ci.org/nickswebsite/r2dto.svg?branch=master)
 
 Pronounced R-2-D-2.
 
