@@ -80,4 +80,3 @@ class BaseSerializerTests(unittest.TestCase):
         s = ObjSerializer(object=o)
         s.validate()
         self.assertEqual(s.data["stringField"], o.string_field)
-

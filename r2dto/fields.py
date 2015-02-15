@@ -108,7 +108,9 @@ class ListField(BaseField):
                     res.append(obj)
                     break
             else:
-                raise InvalidTypeValidationError("{}[{}]".format(self.name, item_i), str(self.allowed_types), type(item))
+                raise InvalidTypeValidationError(
+                    "{}[{}]".format(self.name, item_i), str(self.allowed_types), type(item)
+                )
 
         return res
 
@@ -124,7 +126,9 @@ class ListField(BaseField):
                     res.append(data)
                     break
             else:
-                raise InvalidTypeValidationError("{}[{}]".format(self.name, item_i), str(self.allowed_types), type(item))
+                raise InvalidTypeValidationError(
+                    "{}[{}]".format(self.name, item_i), str(self.allowed_types), type(item)
+                )
         return res
 
 

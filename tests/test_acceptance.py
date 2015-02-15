@@ -82,7 +82,10 @@ class AcceptanceTests(unittest.TestCase):
                 model = Obj
 
             objfield = StringField(name="objField", required=True, allow_null=False)
-            subobjs = ListField(ObjectField(SubObjSerializer, required=True, allow_null=False), name="subObjs", required=True, allow_null=False)
+            subobjs = ListField(ObjectField(SubObjSerializer, required=True, allow_null=False),
+                                name="subObjs",
+                                required=True,
+                                allow_null=False)
 
         o = Obj()
         o.objfield = "ONE"
