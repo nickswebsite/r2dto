@@ -61,6 +61,27 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(s2.object.sub_obj.field, data["sub_obj"]["field"])
         self.assertEqual(data["list_field"], s2.object.list_field)
 
+    def test_issue_4(self):
+        class Obj(object):
+            def __init__(self, prop=""):
+                self.prop = prop
+
+        class ObjSerializer(Serializer):
+            prop = StringField()
+
+        class ListObject(object):
+            def __init__(self):
+                self.list_field = []
+
+        class ListSerializer(Serializer):
+            list_field = ListField(name="listField", allowed_types=ObjectField(serializer_class=ObjSerializer))
+
+        some_list_object = ListObject()
+        some_list_object.list_field = [Obj(prop="Prop One"), Obj(prop="Prop Two")]
+        serializer = ListSerializer(object=some_list_object)
+        serializer.validate()
+        self.assertEqual(serializer.data["listField"], [{"prop": "Prop One"}, {"prop": "Prop Two"}])
+
     def test_list_field_with_subobjects(self):
         class SubObj(object):
             def __init__(self, field=""):
