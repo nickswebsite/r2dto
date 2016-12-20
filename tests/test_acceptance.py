@@ -103,9 +103,9 @@ class AcceptanceTests(unittest.TestCase):
                 self.field = field
 
         class Obj(object):
-            def __init__(self):
-                self.subobjs = []
-                self.objfield = ""
+            def __init__(self, objfield="", subobjs=None):
+                self.subobjs = subobjs or []
+                self.objfield = objfield
 
         class SubObjSerializer(Serializer):
             class Meta:
@@ -121,15 +121,21 @@ class AcceptanceTests(unittest.TestCase):
             subobjs = ListField(ObjectField(SubObjSerializer, required=True, allow_null=False),
                                 name="subObjs", required=True, allow_null=False)
 
-        o = Obj()
-        o.objfield = "ONE"
-        o.subobjs = [type('FailedSubObj1', (object,), {}), SubObj(field=1), SubObj(field="ONE_SUB_TWO")]
+        _object = Obj("ONE", [type('FailedSubObj1', (object,), {}), SubObj(field=1), SubObj(field="ONE_SUB_TWO")])
         try:
-            s = ObjSerializer(object=o)
-            s.validate()
+            ObjSerializer(object=_object).validate()
             self.fail('No Exception was thrown, object should have failed validation')
         except ValidationError as ex:
             self.assertEqual("subObjs[0]: ['Field field is missing from object.']", ex.errors[0])
+            self.assertEqual('subObjs[1]: ["field must be a (<class \'str\'>,).  Got <class \'int\'>."]',
+                             ex.errors[1].replace('type', 'class').replace('basestring', 'str'))
+
+        data = {'objField': 'test', 'subObjs': [{}, {'field': 1}]}
+        try:
+            ObjSerializer(data=data).validate()
+            self.fail('No Exception was thrown, object should have failed validation')
+        except ValidationError as ex:
+            self.assertEqual("subObjs[0]: ['Field field is missing.']", ex.errors[0])
             self.assertEqual('subObjs[1]: ["field must be a (<class \'str\'>,).  Got <class \'int\'>."]',
                              ex.errors[1].replace('type', 'class').replace('basestring', 'str'))
 
