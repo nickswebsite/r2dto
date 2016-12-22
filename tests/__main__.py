@@ -2,10 +2,11 @@ import doctest
 import sys
 import unittest
 
+import r2dto
 from tests.test_acceptance import AcceptanceTests
 from tests.test_base_serializer import BaseSerializerTests
 
-import r2dto
+__all__ = ["doctest", "sys", "unittest", "r2dto", "AcceptanceTests", "BaseSerializerTests"]
 
 try:
     import pep8

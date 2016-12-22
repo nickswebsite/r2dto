@@ -97,6 +97,48 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(o.subobjs[0].field, s.data["subObjs"][0]["field"])
         self.assertEqual(o.subobjs[1].field, s.data["subObjs"][1]["field"])
 
+    def test_list_field_failure_with_subobjects(self):
+        class SubObj(object):
+            def __init__(self, field=""):
+                self.field = field
+
+        class Obj(object):
+            def __init__(self, objfield="", subobjs=None):
+                self.subobjs = subobjs or []
+                self.objfield = objfield
+
+        class SubObjSerializer(Serializer):
+            class Meta:
+                model = SubObj
+
+            field = StringField(required=True)
+
+        class ObjSerializer(Serializer):
+            class Meta:
+                model = Obj
+
+            objfield = StringField(name="objField", required=True, allow_null=False)
+            subobjs = ListField(ObjectField(SubObjSerializer, required=True, allow_null=False),
+                                name="subObjs", required=True, allow_null=False)
+
+        _object = Obj("ONE", [type('FailedSubObj1', (object,), {}), SubObj(field=1), SubObj(field="ONE_SUB_TWO")])
+        try:
+            ObjSerializer(object=_object).validate()
+            self.fail('No Exception was thrown, object should have failed validation')
+        except ValidationError as ex:
+            self.assertEqual("subObjs[0]: ['Field field is missing from object.']", ex.errors[0])
+            self.assertEqual('subObjs[1]: ["field must be a (<class \'str\'>,).  Got <class \'int\'>."]',
+                             ex.errors[1].replace('type', 'class').replace('basestring', 'str'))
+
+        data = {'objField': 'test', 'subObjs': [{}, {'field': 1}]}
+        try:
+            ObjSerializer(data=data).validate()
+            self.fail('No Exception was thrown, object should have failed validation')
+        except ValidationError as ex:
+            self.assertEqual("subObjs[0]: ['Field field is missing.']", ex.errors[0])
+            self.assertEqual('subObjs[1]: ["field must be a (<class \'str\'>,).  Got <class \'int\'>."]',
+                             ex.errors[1].replace('type', 'class').replace('basestring', 'str'))
+
     def test_list_failure(self):
         class ObjSerializer(Serializer):
             list_field = ListField(StringField(), required=True, allow_null=False)
