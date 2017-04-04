@@ -1,10 +1,13 @@
 import datetime
+import re
 import uuid
 
 from .base import ValidationError, InvalidTypeValidationError, BaseField
 
 __all__ = ("Field", "StringField", "BooleanField", "IntegerField", "FloatField",
-           "ObjectField", "ListField", "DateTimeField", "DateField", "TimeField", "UuidField")
+           "ObjectField", "ListField", "DateTimeField", "InternetDateTimeField", "DateField", "TimeField", "UuidField")
+
+TIME_TOKEN_STRIPPER_PATTERN = re.compile(r"[:]|([-](?!((\d{2}[:]\d{2})|(\d{4}))$))")
 
 Field = BaseField
 
@@ -130,6 +133,23 @@ class ListField(BaseField):
         return res
 
 
+def _default_parse_internet_datetime_string_function(s):
+    stripped = re.sub(TIME_TOKEN_STRIPPER_PATTERN, "", s)
+    fmt = "%Y%m%dT%H%M%S"
+    if "." in stripped:
+        fmt += ".%f"
+    offset = datetime.timedelta(hours=0, minutes=0)
+    if "-" in stripped:
+        stripped, offset_str = stripped.split("-")
+        offset = -datetime.timedelta(hours=int(offset_str[:2]), minutes=int(offset_str[2:4]))
+    elif "+" in stripped:
+        stripped, offset_str = stripped.split("+")
+        offset = datetime.timedelta(hours=int(offset_str[:2]), minutes=int(offset_str[2:4]))
+    elif stripped[-1] == "Z":
+        stripped = stripped[:-1]
+    return datetime.datetime.strptime(stripped, fmt) + offset
+
+
 class DateTimeField(StringField):
     """
     Represents a datetime object.
@@ -159,6 +179,23 @@ class DateTimeField(StringField):
         if not isinstance(obj, self.instance_type):
             raise InvalidTypeValidationError(self.name, "datetime", type(obj))
         return obj.strftime(self.fmt)
+
+
+class InternetDateTimeField(DateTimeField):
+    """
+    Represents a datetime object.  Serializes to an RFC-3339 datetime field.  Naive dates are considered to be UTC.
+    """
+    def __init__(self, *args, **kwargs):
+        super(InternetDateTimeField, self).__init__(parse=_default_parse_internet_datetime_string_function,
+                                                    *args, **kwargs)
+
+    def object_to_data(self, obj):
+        if not isinstance(obj, self.instance_type):
+            raise InvalidTypeValidationError(self.name, "datetime", type(obj))
+        if obj.tzinfo:
+            return obj.isoformat()
+        else:
+            return obj.isoformat() + "Z"
 
 
 class DateField(DateTimeField):

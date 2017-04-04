@@ -1,9 +1,14 @@
-import datetime
+# import datetime
+from datetime import timedelta, datetime, date, time
+import random
 import unittest
 import uuid
 
-from r2dto.fields import StringField, BooleanField, FloatField, IntegerField, ListField, ObjectField, DateTimeField, \
-    UuidField, DateField, TimeField
+import pytz
+
+from r2dto.fields import StringField, BooleanField, FloatField, IntegerField, ListField, ObjectField, \
+    InternetDateTimeField, DateTimeField, UuidField, DateField, TimeField, \
+    _default_parse_internet_datetime_string_function
 from r2dto import Serializer, ValidationError
 
 
@@ -201,7 +206,8 @@ class AcceptanceTests(unittest.TestCase):
                 self.integer_field = 23
                 self.float_field = 2.41342
                 self.boolean_field = False
-                self.datetime_field = datetime.datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
+                self.iso_datetime_field = datetime(2021, 2, 3, 1, 2, 3, microsecond=314498)
+                self.datetime_field = datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
                 self.uuid_field = None
                 self.date_field = None
                 self.time_field = None
@@ -215,6 +221,7 @@ class AcceptanceTests(unittest.TestCase):
             float_field = FloatField(name="floatField", required=True, allow_null=False)
             boolean_field = BooleanField(name="boolField", required=True, allow_null=False)
             datetime_field = DateTimeField(name="datetimeField", required=True, allow_null=False)
+            iso_datetime_field = InternetDateTimeField(name="isoDatetimeField", required=True, allow_null=False)
             date_field = DateField(name="dateField", required=True, allow_null=False)
             time_field = TimeField(name="timeField", required=True, allow_null=False)
             uuid_field = UuidField(name="uuidField", required=True, allow_null=False)
@@ -224,10 +231,11 @@ class AcceptanceTests(unittest.TestCase):
         obj.integer_field = 233
         obj.float_field = 2.41342
         obj.boolean_field = True
-        obj.datetime_field = datetime.datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
+        obj.datetime_field = datetime(2013, 5, 4, 2, 1, 0, microsecond=132832)
+        obj.iso_datetime_field = datetime(2014, 8, 2, 1, 23, 51, microsecond=123143)
         obj.uuid_field = uuid.UUID("e841beb3-ff2e-4b0a-b6a6-ea56044b2288")
-        obj.date_field = datetime.date(2014, 3, 1)
-        obj.time_field = datetime.time(12, 30, 23, 341012)
+        obj.date_field = date(2014, 3, 1)
+        obj.time_field = time(12, 30, 23, 341012)
 
         s = ObjSerializer(object=obj)
         s.validate()
@@ -236,6 +244,7 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(obj.float_field, s.data["floatField"])
         self.assertIs(obj.boolean_field, s.data["boolField"])
         self.assertEqual("2013-05-04 02:01:00.132832", s.data["datetimeField"])
+        self.assertEqual("2014-08-02T01:23:51.123143Z", s.data["isoDatetimeField"])
         self.assertEqual("e841beb3-ff2e-4b0a-b6a6-ea56044b2288", s.data["uuidField"])
         self.assertEqual("2014-03-01", s.data["dateField"])
         self.assertEqual("12:30:23.341012", s.data["timeField"])
@@ -247,6 +256,7 @@ class AcceptanceTests(unittest.TestCase):
             "boolField": True,
             "uuidField": "e841beb3-ff2e-4b0a-b6a6-ea56044b2288",
             "datetimeField": "2013-12-30 23:56:23.431090",
+            "isoDatetimeField": "2015-02-21T14:32:15.557556Z",
             "dateField": "2014-02-26",
             "timeField": "12:04:23.430123"
         }
@@ -259,9 +269,10 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(s2.object.float_field, data["floatField"])
         self.assertIs(s2.object.boolean_field, data["boolField"])
         self.assertEqual(uuid.UUID("e841beb3-ff2e-4b0a-b6a6-ea56044b2288"), s2.object.uuid_field)
-        self.assertEqual(s2.object.datetime_field, datetime.datetime(2013, 12, 30, 23, 56, 23, 431090))
-        self.assertEqual(s2.object.date_field, datetime.date(2014, 2, 26))
-        self.assertEqual(s2.object.time_field, datetime.time(12, 4, 23, 430123))
+        self.assertEqual(s2.object.datetime_field, datetime(2013, 12, 30, 23, 56, 23, 431090))
+        self.assertEqual(s2.object.iso_datetime_field, datetime(2015, 2, 21, 14, 32, 15, 557556))
+        self.assertEqual(s2.object.date_field, date(2014, 2, 26))
+        self.assertEqual(s2.object.time_field, time(12, 4, 23, 430123))
 
         data = {
             "stringField": None,
@@ -313,3 +324,29 @@ class AcceptanceTests(unittest.TestCase):
         s = ObjSerializer(data={})
         s.validate()
         self.assertEqual(s.object.string_field, Obj().string_field)
+
+    def test_default_parse_iso_datetime_string_function(self):
+        cases = [("2013-04-30T12:54:23+0322", datetime(2013, 4, 30, 12, 54, 23) + timedelta(hours=3, minutes=22)),
+                 ("2016-12-23T23:11:34.123+0000", datetime(2016, 12, 23, 23, 11, 34, microsecond=123000)),
+                 ("2016-12-23T23:11:34.123221+0000", datetime(2016, 12, 23, 23, 11, 34, microsecond=123221)),
+                 ("2015-05-12T10:33:34Z", datetime(2015, 5, 12, 10, 33, 34)),
+                 ("2044-02-26T13:54:11-1030", datetime(2044, 2, 26, 13, 54, 11) - timedelta(hours=10, minutes=30))]
+        for internet_time_string, dt in cases:
+            res = _default_parse_internet_datetime_string_function(internet_time_string)
+            self.assertEqual(res, dt)
+
+    def test_internet_datetime_field(self):
+        cases = [("2013-04-30T12:54:23+0322", datetime(2013, 4, 30, 12, 54, 23), timedelta(hours=3, minutes=22)),
+                 ("2016-12-23T23:11:34.123+0000", datetime(2016, 12, 23, 23, 11, 34, microsecond=123000), None),
+                 ("2016-12-23T23:11:34.123221+0000", datetime(2016, 12, 23, 23, 11, 34, microsecond=123221), None),
+                 ("2015-05-12T10:33:34Z", datetime(2015, 5, 12, 10, 33, 34), None),
+                 ("2044-02-26T13:54:11-1030", datetime(2044, 2, 26, 13, 54, 11), -timedelta(hours=10, minutes=30))]
+
+        field = InternetDateTimeField()
+        for internet_time_string, dt, offset in cases:
+            offset = offset or timedelta()
+            self.assertEqual(field.clean(internet_time_string), dt + offset)
+        for internet_time_string, dt, offset in cases:
+            est = pytz.timezone(random.choice(list(pytz.all_timezones)))
+            dt = est.localize(dt)
+            self.assertEqual(field.object_to_data(dt), dt.isoformat())
