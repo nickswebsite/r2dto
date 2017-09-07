@@ -326,11 +326,11 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(s.object.string_field, Obj().string_field)
 
     def test_default_parse_iso_datetime_string_function(self):
-        cases = [("2013-04-30T12:54:23+0322", datetime(2013, 4, 30, 12, 54, 23) + timedelta(hours=3, minutes=22)),
+        cases = [("2013-04-30T12:54:23+0322", datetime(2013, 4, 30, 9, 32, 23)),
                  ("2016-12-23T23:11:34.123+0000", datetime(2016, 12, 23, 23, 11, 34, microsecond=123000)),
                  ("2016-12-23T23:11:34.123221+0000", datetime(2016, 12, 23, 23, 11, 34, microsecond=123221)),
                  ("2015-05-12T10:33:34Z", datetime(2015, 5, 12, 10, 33, 34)),
-                 ("2044-02-26T13:54:11-1030", datetime(2044, 2, 26, 13, 54, 11) - timedelta(hours=10, minutes=30))]
+                 ("2044-02-26T13:54:11-1030", datetime(2044, 2, 27, 0, 24, 11))]
         for internet_time_string, dt in cases:
             res = _default_parse_internet_datetime_string_function(internet_time_string)
             self.assertEqual(res, dt)
@@ -345,7 +345,7 @@ class AcceptanceTests(unittest.TestCase):
         field = InternetDateTimeField()
         for internet_time_string, dt, offset in cases:
             offset = offset or timedelta()
-            self.assertEqual(field.clean(internet_time_string), dt + offset)
+            self.assertEqual(field.clean(internet_time_string), dt - offset)
         for internet_time_string, dt, offset in cases:
             est = pytz.timezone(random.choice(list(pytz.all_timezones)))
             dt = est.localize(dt)
