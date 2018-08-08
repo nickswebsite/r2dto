@@ -104,14 +104,17 @@ class ListField(BaseField):
         res = []
         errors = []
         for item_i, item in enumerate(data):
+            item_errors = list()
             for allowed_type in self.allowed_types:
                 try:
                     obj = allowed_type.clean(item)
                 except ValidationError as ex:
-                    errors.append('{}[{}]: {}'.format(self.name, item_i, ex))
+                    item_errors.append('{}[{}]: {}'.format(self.name, item_i, ex))
                 else:
                     res.append(obj)
+                    item_errors = list()
                     break
+            errors.extend(item_errors)
         if errors:
             raise ValidationError(errors)
         return res
@@ -120,14 +123,17 @@ class ListField(BaseField):
         res = []
         errors = []
         for item_i, item in enumerate(obj):
+            item_errors = list()
             for allowed_type in self.allowed_types:
                 try:
                     data = allowed_type.object_to_data(item)
                 except ValidationError as ex:
-                    errors.append('{}[{}]: {}'.format(self.name, item_i, ex))
+                    item_errors.append('{}[{}]: {}'.format(self.name, item_i, ex))
                 else:
                     res.append(data)
+                    item_errors = list()
                     break
+            errors.extend(item_errors)
         if errors:
             raise ValidationError(errors)
         return res
