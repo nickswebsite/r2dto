@@ -66,6 +66,71 @@ class AcceptanceTests(unittest.TestCase):
         self.assertEqual(s2.object.sub_obj.field, data["sub_obj"]["field"])
         self.assertEqual(data["list_field"], s2.object.list_field)
 
+    def test_complex_multiple_allowed_types(self):
+        class SubObjOne(object):
+            def __init__(self, field="Field One"):
+                self.field = field
+
+        class SubObjTwo(object):
+            def __init__(self, field=0):
+                self.field = field
+
+        class Obj(object):
+            def __init__(self):
+                self.list_field = []
+                self.sub_obj_one = SubObjOne()
+                self.sub_obj_two = SubObjTwo()
+
+        class SubObjOneSerializer(Serializer):
+            class Meta:
+                model = SubObjOne
+
+            field = StringField(required=True, allow_null=False)
+
+        class SubObjTwoSerializer(Serializer):
+            class Meta:
+                model = SubObjTwo
+
+            field = IntegerField(required=True, allow_null=False)
+
+        class ObjSerializer(Serializer):
+            class Meta:
+                model = Obj
+
+            sub_obj_one = ObjectField(SubObjOneSerializer, required=True, allow_null=False)
+            sub_obj_two = ObjectField(SubObjTwoSerializer, required=True, allow_null=False)
+            list_field = ListField(allowed_types=(StringField(), IntegerField()), required=True, allow_null=False)
+
+        o = Obj()
+        o.sub_obj_one.field = "Field One"
+        o.sub_obj_two.field = 42
+        o.list_field = ["Hi"]
+
+        s = ObjSerializer(object=o)
+        s.validate()
+        self.assertEqual(s.data["sub_obj_one"]["field"], o.sub_obj_one.field)
+        self.assertEqual(s.data["sub_obj_two"]["field"], o.sub_obj_two.field)
+        self.assertEqual(o.list_field, s.data["list_field"])
+
+        data = {
+            "sub_obj_one": {
+                "field": "Some String Field Value",
+            },
+            "sub_obj_two": {
+                "field": 42,
+            },
+            "list_field": [
+                "listItemOne",
+                42
+            ]
+        }
+
+        s2 = ObjSerializer(data=data)
+        s2.validate()
+        self.assertEqual(s2.object.sub_obj_one.field, data["sub_obj_one"]["field"])
+        self.assertEqual(s2.object.sub_obj_two.field, data["sub_obj_two"]["field"])
+        self.assertEqual(data["list_field"], s2.object.list_field)
+
     def test_list_field_with_subobjects(self):
         class SubObj(object):
             def __init__(self, field=""):
@@ -95,6 +160,53 @@ class AcceptanceTests(unittest.TestCase):
         o = Obj()
         o.objfield = "ONE"
         o.subobjs = [SubObj(field="ONE_SUB_ONE"), SubObj(field="ONE_SUB_TWO")]
+
+        s = ObjSerializer(object=o)
+        s.validate()
+        self.assertEqual(o.objfield, s.data["objField"])
+        self.assertEqual(o.subobjs[0].field, s.data["subObjs"][0]["field"])
+        self.assertEqual(o.subobjs[1].field, s.data["subObjs"][1]["field"])
+
+    def test_list_field_with_subobjects_of_multiple_allowed_types(self):
+        class SubObjOne(object):
+            def __init__(self, field=""):
+                self.field = field
+
+        class SubObjTwo(object):
+            def __init__(self, field=None):
+                self.field = field
+
+        class Obj(object):
+            def __init__(self):
+                self.subobjs = []
+                self.objfield = ""
+
+        class SubObjOneSerializer(Serializer):
+            class Meta:
+                model = SubObjOne
+
+            field = StringField()
+
+        class SubObjTwoSerializer(Serializer):
+            class Meta:
+                model = SubObjTwo
+
+            field = IntegerField()
+
+        class ObjSerializer(Serializer):
+            class Meta:
+                model = Obj
+
+            objfield = StringField(name="objField", required=True, allow_null=False)
+            subobjs = ListField(
+                allowed_types=(
+                    ObjectField(SubObjOneSerializer, required=True, allow_null=False),
+                    ObjectField(SubObjTwoSerializer, required=True, allow_null=False),
+                ), name="subObjs", required=True, allow_null=False)
+
+        o = Obj()
+        o.objfield = "ONE"
+        o.subobjs = [SubObjOne(field="ONE_SUB_ONE"), SubObjTwo(field=42)]
 
         s = ObjSerializer(object=o)
         s.validate()
