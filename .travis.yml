@@ -4,9 +4,13 @@ python:
 - "3.4"
 - "3.5"
 - "3.6"
-- "3.7"
 - "pypy"
 - "pypy3"
 install:
 - pip install pep8 pytz
 script: python -m tests
+matrix:
+  include:
+  - python: 3.7
+    dist: xenial
+    sudo: true
