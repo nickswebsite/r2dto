@@ -1,6 +1,6 @@
 """Package to convert arbitrary python objects into DTOs ready for serialization and validation."""
 
-__version__ = "0.0.5"
+__version__ = "0.0.7"
 
 from setuptools import setup, find_packages, Command
 
